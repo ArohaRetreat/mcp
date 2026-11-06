@@ -1,3 +1,10 @@
+## 0.2.0 — scoped CRUD
+
+- Generate106 fixed typed tools from canonical REST contract1.2.0; preserve nine original read names and read-only grant ceiling.
+- Require explicit write keys and conditional ETags, refresh current capabilities, and never automatically retry uncertain writes.
+- Support private bounded PDF resources and all domain-backed payment, lifecycle, feedback, CMS/media and access operations through REST only.
+- Preserve per-attempt native traces, metrics, safe logs and traceparent propagation; exclude arguments/results and credentials.
+
 # Changelog
 
 ## 0.1.0

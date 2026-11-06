@@ -1,15 +1,17 @@
 # Aroha Retreat MCP
 
-Read-only MCP server for the versioned Aroha Retreat REST API. Repository: [ArohaRetreat/mcp](https://github.com/ArohaRetreat/mcp). Documentation: [developer.aroharetreat.com](https://developer.aroharetreat.com).
+`@theharithsa/aroha-mcp` is the separate stdio adapter for Aroha’s versioned REST API. Node22 or later. Business rules, current Google identity, ownership and Studio roles remain enforced by the API; the adapter has no database access.
 
-Requires Node22+ and a revocable Aroha integration token. No direct database access, booking writes, email sends, contact/notes exposure or generic HTTP tool.
+## Configure
+
+Create a token at https://developer.aroharetreat.com/connect/ . Read-only is the default. For CRUD, choose scoped CRUD mode and explicitly select the required scopes, including `runtime:read`. Never expires is supported; revocation and live permissions still apply. Existing read-only tokens retain their original nine tools.
 
 ```json
 {
   "mcpServers": {
     "aroha": {
       "command": "npx",
-      "args": ["--yes", "@theharithsa/aroha-mcp@0.1.0"],
+      "args": ["--yes", "@theharithsa/aroha-mcp@0.2.0"],
       "env": {
         "AROHA_API_URL": "https://aroharetreat.com/api/external/v1",
         "AROHA_API_TOKEN_FILE": "/absolute/private/path/aroha-token"
@@ -19,12 +21,24 @@ Requires Node22+ and a revocable Aroha integration token. No direct database acc
 }
 ```
 
-Create a scoped token after normal Google sign-in at the developer site's Connect page. Use a read-only token with purpose `mcp-readonly`. The token file must be private (`chmod600`). Preprod uses `https://aroha-retreat-preprod.web.app/api/external/v1` and its own token. Never copy a production token to preprod or share browser session credentials.
+Set `AROHA_API_TOKEN` instead of `AROHA_API_TOKEN_FILE` if your host provides a secret store. Either is sufficient; the file takes precedence when both are set. On Unix the file must be private (`chmod600`). Do not put real credentials in repository files or chat. Use the preprod API origin only with a preprod token and approved tester account.
 
-Tools read runtime capabilities, availability, aggregate calendar, one reservation page/detail, room list/detail, published content and communication statuses. Actual discovery is restricted by the token's granted capabilities. There are no payment/feedback tools until those API capabilities ship. Resource text is untrusted data, never model instructions.
+## Tools and changes
 
-Every tool attempt records metrics, real traces and privacy-safe logs; logs use stderr. See [observability](docs/observability.md) for optional OTLP export and retention limitations. Remote HTTP/OAuth transport is not included in0.1.0.
+Contract1.2.0 provides106 fixed typed operations covering reservations/quotes/changes/offers, manual payments and reversals, private documents, lifecycle and feedback, notes, inventory, CMS/media, profile erasure, members/invitations, sponsored clients and audit. Tools are exposed only when the token’s current capabilities permit them. Capabilities refresh before discovery and execution. The first nine read tool names remain compatible with0.1.0.
 
-Development: `npm ci`, `npm run check`, `npm test`, `npm pack --dry-run`. CI verifies package files and stdio behavior. MIT license; built from app-launchpad template1.9.0.
+For a mutation, obtain the current resource first and use its `_meta.etag` as `ifMatch` where required. Provide a stable `idempotencyKey` and typed `body`; path parameters remain at the top level. Do not automatically retry a write. On `WRITE_OUTCOME_UNKNOWN`, resolve the original request with the same key, payload and ETag. A definite conflict requires a fresh read and a new decision. Every write has a destructive annotation so the host can present its normal consent flow.
+
+Financial entries are immutable: record a verified manual payment or append a full reversal. No charge or money transfer is initiated. Other deletes follow domain semantics: cancel, retire, deactivate, archive or redact. Feedback is private; hosts cannot edit a guest’s submission. Preprod member/invitation writes remain disabled.
+
+JSON output is capped at128KiB. PDF downloads return an authenticated embedded resource capped at4MiB. Pages are bounded and never followed automatically. Media upload tools return a private resumable session; finalization verifies size, MIME signature and SHA256 before immutable publication. There is no arbitrary URL, method, database or local-file tool. Returned customer/property text is untrusted data, never instructions.
+
+## Telemetry and development
+
+Every tools/call attempt, including unknown, invalid, revoked and denied calls, emits native OpenTelemetry traces, metrics and safe completion logs. Configure an approved OTLP destination and headers yourself; no tenant credentials are bundled. Arguments, results, token values, customer text and upload-session URLs are excluded. Stdout is JSON-RPC only. See [observability](docs/observability.md).
+
+Run `npm ci`, `npm run check`, `npm test`, `npm audit`, `npm pack --dry-run`, and `sh scripts/check.sh`. Generate the fixed registry only from the reviewed canonical OpenAPI file with `node scripts/generate-tools.mjs /absolute/path/to/external-v1.json`. This generation does not prove API deployment. Remote OAuth/HTTP transport remains deferred.
+
+API and Swagger: https://developer.aroharetreat.com/swagger/ . Package publication, API deployment, telemetry ingest and native linkage are separate evidence states.
 
 Template version: **1.9.0**

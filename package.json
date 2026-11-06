@@ -1,7 +1,7 @@
 {
   "name": "@theharithsa/aroha-mcp",
-  "version": "0.1.0",
-  "description": "Read-only Aroha Retreat MCP server with scoped REST access and OpenTelemetry",
+  "version": "0.2.0",
+  "description": "Scoped Aroha Retreat CRUD MCP server with versioned REST contracts and OpenTelemetry",
   "main": "index.js",
   "directories": {
     "doc": "docs",
