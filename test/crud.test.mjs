@@ -161,7 +161,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
     assert.equal(list.result.tools.length, 6);
     assert.ok(list.result.tools.some((t) => !t.annotations.readOnlyHint));
     assert.equal(list.result.tools.find(t=>t.name==='aroha_lookup_customers').annotations.readOnlyHint,true);
-    const lookup=await call('tools/call',{name:'aroha_lookup_customers',arguments:{body:{mode:'email',search:'synthetic@example.test',limit:10}}});assert.ok(!lookup.result.isError,JSON.stringify(lookup));assert.deepEqual(lookup.result.structuredContent,{items:[],hasMore:false});const lookupHttp=requests.find(r=>r.path.endsWith('/customers/lookups'));assert.equal(lookupHttp.method,'POST');assert.equal(lookupHttp.headers['idempotency-key'],undefined);assert.equal(lookupHttp.body.search,'synthetic@example.test');
+    const lookup=await call('tools/call',{name:'aroha_lookup_customers',arguments:{body:{mode:'email',search:'synthetic@example.test',limit:10}}});assert.ok(!lookup.result.isError,JSON.stringify(lookup));assert.deepEqual(lookup.result.structuredContent,{items:[],hasMore:false});const lookupHttp=requests.find(r=>r.path.endsWith('/customers/lookups'));assert.equal(lookupHttp.method,'POST');assert.equal(lookupHttp.headers['idempotency-key'],undefined);assert.equal(lookupHttp.body.search,'synthetic@example.test');assert.ok(lookupHttp.headers.traceparent);
 
     const create = await call("tools/call", {
       name: "aroha_create_unit",
@@ -215,7 +215,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
         .toString(),
       "%PDF",
     );
-    const writes = requests.filter((r) => r.method !== "GET");
+    const writes = requests.filter((r) => r.method !== "GET" && !r.path.endsWith("/customers/lookups"));
     assert.deepEqual(
       writes.map((r) => r.method),
       ["POST", "PATCH", "DELETE"],
@@ -227,6 +227,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
     await once(child, "exit");
     assert.equal(child.exitCode, 0);
     assert.ok(!stderr.includes("Synthetic Unit"));
+    assert.ok(!stderr.includes("synthetic@example.test"));
     assert.ok(!stderr.includes(token));
   } finally {
     child.kill();
