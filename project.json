@@ -1,42 +1,42 @@
 {
   "$schema": "schemas/project.schema.json",
   "schemaVersion": 1,
-  "name": null,
+  "name": "aroha-mcp",
   "template": {
     "repository": "theharithsa/app-launchpad-template",
-    "revision": null,
+    "revision": "f04c042a9e000f606982863518fa7bb9cfbb7d85",
     "version": "1.9.0"
   },
   "decisions": {
     "product": {
-      "status": "needs-user-input",
-      "value": null,
-      "approval": null
+      "status": "approved",
+      "value": "Separate read-only Aroha MCP npm package @theharithsa/aroha-mcp",
+      "approval": "User request6November2026"
     },
     "stack": {
-      "status": "needs-user-input",
-      "value": null,
-      "approval": null
+      "status": "proposed",
+      "value": "Node22+ ES modules, MCP SDK2.4, OpenTelemetry native SDK",
+      "approval": "Implementation choice; inherited template where applicable"
     },
     "hosting": {
-      "status": "needs-user-input",
-      "value": null,
-      "approval": null
+      "status": "proposed",
+      "value": "npm public package; local stdio, remote OAuth deferred",
+      "approval": "Implementation choice; inherited template where applicable"
     },
     "privacy": {
-      "status": "needs-user-input",
-      "value": null,
-      "approval": null
+      "status": "approved",
+      "value": "No arguments/results/contact/secrets in telemetry; scoped read-only API credentials",
+      "approval": "User request6November2026"
     },
     "observability": {
-      "status": "needs-user-input",
-      "value": null,
-      "approval": null
+      "status": "approved",
+      "value": "Per-tool SDK logs, traces and metrics; configurable OTLP export",
+      "approval": "User request6November2026"
     },
     "license": {
-      "status": "needs-user-input",
-      "value": null,
-      "approval": null
+      "status": "proposed",
+      "value": "Inherited MIT template license",
+      "approval": "Implementation choice; inherited template where applicable"
     }
   }
 }

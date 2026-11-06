@@ -1,3 +1,10 @@
 # Changelog
 
-Template version **1.9.0** and migration history are recorded in [docs/template-changelog.md](docs/template-changelog.md). Generated applications may use this root file for their own releases; keep template provenance separate.
+## 0.1.0
+
+- Separate read-only stdio MCP package over scoped Aroha REST reads.
+- Fixed tool/GET allowlist, bounded inputs/results, redacted errors and private token-file support.
+- Per-tool OpenTelemetry traces, metrics and logs, real API trace propagation and bounded exporters.
+- SDK protocol integration, privacy/exporter and package tests.
+
+Publication/deployment evidence is recorded separately; this file does not establish registry availability.

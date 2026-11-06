@@ -92,6 +92,18 @@
         "app-launchpad",
         "ian-xiaohei-illustrations"
       ]
+    },
+    {
+      "id": "service-aroha-mcp",
+      "kind": "service",
+      "path": "skills/service-aroha-mcp/SKILL.md",
+      "description": "Maintain the aroha-mcp service; read its implementation and continuation context.",
+      "dependsOn": [
+        "project-implementation",
+        "project-testing",
+        "project-deployment",
+        "project-observability"
+      ]
     }
   ],
   "services": [
@@ -119,6 +131,31 @@
       ],
       "continuation": "skills/service-foundation-tooling/continuation.md",
       "lastReviewedRevision": "953717c787dd37d1500c04767f818f4e0a0faffd"
+    },
+    {
+      "id": "aroha-mcp",
+      "skillId": "service-aroha-mcp",
+      "sourcePaths": [
+        "src"
+      ],
+      "entrypoints": [
+        "src/cli.mjs",
+        "src/server.mjs"
+      ],
+      "owner": "ArohaRetreat",
+      "status": "active",
+      "dependsOn": [],
+      "contracts": [
+        "src/tools.mjs",
+        "docs/observability.md"
+      ],
+      "testCommands": [
+        "npm test",
+        "npm run check",
+        "sh scripts/check.sh"
+      ],
+      "continuation": "skills/service-aroha-mcp/continuation.md",
+      "lastReviewedRevision": null
     }
   ]
 }
