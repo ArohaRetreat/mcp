@@ -1,3 +1,7 @@
+## Contract1.3 adapter prepared — issue6
+
+Package0.3.0 adds the canonical121 operations, including private read-only POST customer lookup, manual bookings, verified customer linking and nightly credits. API remains the only business-policy authority. Preserve original read-only credential ceilings and explicit write keys/ETags. Package tests, reviewed merge, npm publication and production API availability are distinct release gates. No new live credentials or business test writes are authorised.
+
 # MCP continuation
 
 Issue https://github.com/ArohaRetreat/mcp/issues/1; website dependency https://github.com/ArohaRetreat/website/issues/105. Separate repo approved6November2026; scoped-token first, remote OAuth deferred.

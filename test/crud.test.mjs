@@ -8,11 +8,11 @@ import { tools } from "../src/tools.mjs";
 import { createApiClient } from "../src/client.mjs";
 const token = "aroha_v1_prd_" + "a".repeat(32) + "_" + "b".repeat(43);
 test("generated tools cover typed CRUD and keep explicit write controls", () => {
-  assert.equal(tools.length, 106);
-  assert.equal(new Set(tools.map((t) => t.name)).size, 106);
+  assert.equal(tools.length, 121);
+  assert.equal(new Set(tools.map((t) => t.name)).size, 121);
   for (const t of tools) {
-    assert.equal(t.annotations.readOnlyHint, t.method === "GET");
-    if (t.method !== "GET")
+    assert.equal(t.annotations.readOnlyHint, t.method === "GET" || t.operationId === "lookupCustomers");
+    if (!t.annotations.readOnlyHint)
       assert.ok(t.inputSchema.required.includes("idempotencyKey"));
     assert.ok(!t.inputSchema.properties.url);
     assert.ok(!t.inputSchema.properties.method);
@@ -71,6 +71,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
     "updateUnit",
     "retireUnit",
     "downloadDocument",
+    "lookupCustomers",
   ];
   const http = httpServer(async (req, res) => {
     let raw = "";
@@ -87,12 +88,13 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
       res.end(
         JSON.stringify({
           environment: "pre-prod",
-          contractVersion: "1.2.0",
+          contractVersion: "1.3.0",
           purpose: "mcp",
           scopes: ["runtime:read", "inventory:write", "documents:download"],
           capabilities,
         }),
       );
+    else if(req.url.endsWith("/customers/lookups"))res.end(JSON.stringify({items:[],hasMore:false}));
     else if (req.url.endsWith("/content")) {
       res.setHeader("Content-Type", "application/pdf");
       res.end(Buffer.from("%PDF-" + "0".repeat(400000)));
@@ -156,8 +158,11 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
         "\n",
     );
     const list = await call("tools/list", {});
-    assert.equal(list.result.tools.length, 5);
+    assert.equal(list.result.tools.length, 6);
     assert.ok(list.result.tools.some((t) => !t.annotations.readOnlyHint));
+    assert.equal(list.result.tools.find(t=>t.name==='aroha_lookup_customers').annotations.readOnlyHint,true);
+    const lookup=await call('tools/call',{name:'aroha_lookup_customers',arguments:{body:{mode:'email',search:'synthetic@example.test',limit:10}}});assert.ok(!lookup.result.isError,JSON.stringify(lookup));assert.deepEqual(lookup.result.structuredContent,{items:[],hasMore:false});const lookupHttp=requests.find(r=>r.path.endsWith('/customers/lookups'));assert.equal(lookupHttp.method,'POST');assert.equal(lookupHttp.headers['idempotency-key'],undefined);assert.equal(lookupHttp.body.search,'synthetic@example.test');assert.ok(lookupHttp.headers.traceparent);
+
     const create = await call("tools/call", {
       name: "aroha_create_unit",
       arguments: {
@@ -210,7 +215,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
         .toString(),
       "%PDF",
     );
-    const writes = requests.filter((r) => r.method !== "GET");
+    const writes = requests.filter((r) => r.method !== "GET" && !r.path.endsWith("/customers/lookups"));
     assert.deepEqual(
       writes.map((r) => r.method),
       ["POST", "PATCH", "DELETE"],
@@ -222,6 +227,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
     await once(child, "exit");
     assert.equal(child.exitCode, 0);
     assert.ok(!stderr.includes("Synthetic Unit"));
+    assert.ok(!stderr.includes("synthetic@example.test"));
     assert.ok(!stderr.includes(token));
   } finally {
     child.kill();
@@ -229,3 +235,5 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
     http.close();
   }
 });
+
+test('private customer lookup is a typed read-only POST with no write key or uncertain-write label',async()=>{const lookup=tools.find(t=>t.operationId==='lookupCustomers');assert.equal(lookup.annotations.readOnlyHint,true);assert.equal(lookup.annotations.destructiveHint,false);assert.equal(lookup.inputSchema.properties.idempotencyKey,undefined);assert.equal(lookup.schema.safeParse({body:{mode:'email',search:'synthetic@example.test',limit:10}}).success,true);let request;const client=createApiClient({baseUrl:'https://aroharetreat.com/api/external/v1',token,fetcher:async(url,options)=>{request={url,options};return new Response(JSON.stringify({items:[],hasMore:false}),{status:200});}});await client.request(lookup,{body:{mode:'email',search:'synthetic@example.test'}});assert.equal(request.options.method,'POST');assert.equal(request.options.headers['Idempotency-Key'],undefined);assert.equal(request.url.includes('synthetic'),false);assert.equal(JSON.parse(request.options.body).search,'synthetic@example.test');const failed=createApiClient({baseUrl:'https://aroharetreat.com/api/external/v1',token,fetcher:async()=>{throw Error('synthetic');}});await assert.rejects(failed.request(lookup,{body:{mode:'name',search:'Synthetic'}}),e=>e.code==='API_UNAVAILABLE');});
