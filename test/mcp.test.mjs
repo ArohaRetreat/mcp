@@ -13,7 +13,7 @@ import {
   InMemoryMetricExporter,
   AggregationTemporality,
 } from "@opentelemetry/sdk-metrics";
-const token = "aroha_v1_ppr_" + "a".repeat(32) + "_" + "b".repeat(43);
+const token = "aroha_v1_prd_" + "a".repeat(32) + "_" + "b".repeat(43);
 test("API transport rejects noncanonical destinations and does not forward redirects", async () => {
   for (const url of [
     "http://aroharetreat.com/api/external/v1",
@@ -98,13 +98,11 @@ test("every tool attempt emits real correlated spans/logs and metrics without pa
   assert.ok(names.includes("aroha.mcp.tool.duration"));
   const exported = JSON.stringify({
     spans: spans.getFinishedSpans().map((s) => s.attributes),
-    logs: logs
-      .getFinishedLogRecords()
-      .map((l) => ({
-        body: l.body,
-        attributes: l.attributes,
-        spanContext: l.spanContext,
-      })),
+    logs: logs.getFinishedLogRecords().map((l) => ({
+      body: l.body,
+      attributes: l.attributes,
+      spanContext: l.spanContext,
+    })),
     stderr,
   });
   assert.ok(!exported.includes("never-export-this"));
@@ -128,6 +126,8 @@ test("real SDK stdio handshake, discovery, safe reads and denied/invalid calls p
         JSON.stringify({
           environment: "pre-prod",
           contractVersion: "1.0.0",
+          purpose: "mcp-readonly",
+          scopes: ["runtime:read", "reservations:read"],
           capabilities: ["getRuntime", "listReservations"],
         }),
       );
@@ -225,6 +225,49 @@ test("real SDK stdio handshake, discovery, safe reads and denied/invalid calls p
     assert.ok(
       requests.find((r) => r.path.includes("/reservations")).traceparent,
     );
+  } finally {
+    child.kill();
+    http.closeAllConnections();
+    http.close();
+  }
+});
+
+test("CLI refuses a broader integration credential before exposing any tools", async () => {
+  const http = httpServer((req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify({
+        environment: "production",
+        purpose: "integration",
+        scopes: ["runtime:read", "reservations:create"],
+        capabilities: ["getRuntime"],
+      }),
+    );
+  });
+  http.listen(0, "127.0.0.1");
+  await once(http, "listening");
+  const child = spawn(process.execPath, ["src/cli.mjs"], {
+    cwd: new URL("../", import.meta.url),
+    env: {
+      ...process.env,
+      AROHA_API_URL: `http://127.0.0.1:${http.address().port}/api/external/v1`,
+      AROHA_API_TOKEN: token,
+      AROHA_API_TOKEN_FILE: "",
+      AROHA_MCP_ALLOW_LOCALHOST: "1",
+      OTEL_EXPORTER_OTLP_ENDPOINT: "",
+    },
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  let stdout = "",
+    stderr = "";
+  child.stdout.on("data", (b) => (stdout += b));
+  child.stderr.on("data", (b) => (stderr += b));
+  try {
+    await once(child, "exit");
+    assert.equal(child.exitCode, 1);
+    assert.equal(stdout, "");
+    assert.ok(stderr.includes("READ_ONLY_TOKEN_REQUIRED"));
+    assert.ok(!stderr.includes(token));
   } finally {
     child.kill();
     http.closeAllConnections();

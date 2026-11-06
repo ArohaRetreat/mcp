@@ -18,12 +18,28 @@
           "type": "string"
         },
         "maxItems": 50
+      },
+      "purpose": {
+        "type": "string",
+        "enum": [
+          "integration",
+          "mcp-readonly"
+        ]
+      },
+      "scopes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 24
       }
     },
     "required": [
       "environment",
       "contractVersion",
-      "capabilities"
+      "capabilities",
+      "purpose",
+      "scopes"
     ]
   },
   "Availability": {

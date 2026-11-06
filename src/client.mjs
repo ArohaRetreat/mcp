@@ -56,6 +56,11 @@ export function createApiClient({
   const base = apiBase(baseUrl, allowLocal);
   if (!/^aroha_v1_(prd|ppr)_[a-f0-9]{32}_[A-Za-z0-9_-]{43}$/.test(token || ""))
     throw new ApiError("INVALID_API_TOKEN");
+  if (
+    !allowLocal &&
+    token.startsWith("aroha_v1_ppr_") !== base.includes("preprod")
+  )
+    throw new ApiError("WRONG_ENVIRONMENT");
   return {
     base,
     async get(tool, args = {}) {

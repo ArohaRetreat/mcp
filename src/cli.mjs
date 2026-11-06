@@ -38,6 +38,14 @@ if (process.argv.includes("--help")) {
       path: "/runtime",
       operationId: "getRuntime",
     });
+    if (
+      runtime.data.purpose !== "mcp-readonly" ||
+      !Array.isArray(runtime.data.scopes) ||
+      runtime.data.scopes.some((s) => !s.endsWith(":read"))
+    )
+      throw Object.assign(new Error("READ_ONLY_TOKEN_REQUIRED"), {
+        code: "READ_ONLY_TOKEN_REQUIRED",
+      });
     if (!Array.isArray(runtime.data.capabilities))
       throw new Error("INVALID_CAPABILITIES");
     handle = serveStdio(
