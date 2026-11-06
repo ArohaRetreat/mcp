@@ -71,6 +71,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
     "updateUnit",
     "retireUnit",
     "downloadDocument",
+    "lookupCustomers",
   ];
   const http = httpServer(async (req, res) => {
     let raw = "";
@@ -93,6 +94,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
           capabilities,
         }),
       );
+    else if(req.url.endsWith("/customers/lookups"))res.end(JSON.stringify({items:[],hasMore:false}));
     else if (req.url.endsWith("/content")) {
       res.setHeader("Content-Type", "application/pdf");
       res.end(Buffer.from("%PDF-" + "0".repeat(400000)));
@@ -156,8 +158,11 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
         "\n",
     );
     const list = await call("tools/list", {});
-    assert.equal(list.result.tools.length, 5);
+    assert.equal(list.result.tools.length, 6);
     assert.ok(list.result.tools.some((t) => !t.annotations.readOnlyHint));
+    assert.equal(list.result.tools.find(t=>t.name==='aroha_lookup_customers').annotations.readOnlyHint,true);
+    const lookup=await call('tools/call',{name:'aroha_lookup_customers',arguments:{body:{mode:'email',search:'synthetic@example.test',limit:10}}});assert.ok(!lookup.result.isError,JSON.stringify(lookup));assert.deepEqual(lookup.result.structuredContent,{items:[],hasMore:false});const lookupHttp=requests.find(r=>r.path.endsWith('/customers/lookups'));assert.equal(lookupHttp.method,'POST');assert.equal(lookupHttp.headers['idempotency-key'],undefined);assert.equal(lookupHttp.body.search,'synthetic@example.test');
+
     const create = await call("tools/call", {
       name: "aroha_create_unit",
       arguments: {
