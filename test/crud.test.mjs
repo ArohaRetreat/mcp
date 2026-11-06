@@ -8,11 +8,11 @@ import { tools } from "../src/tools.mjs";
 import { createApiClient } from "../src/client.mjs";
 const token = "aroha_v1_prd_" + "a".repeat(32) + "_" + "b".repeat(43);
 test("generated tools cover typed CRUD and keep explicit write controls", () => {
-  assert.equal(tools.length, 106);
-  assert.equal(new Set(tools.map((t) => t.name)).size, 106);
+  assert.equal(tools.length, 121);
+  assert.equal(new Set(tools.map((t) => t.name)).size, 121);
   for (const t of tools) {
-    assert.equal(t.annotations.readOnlyHint, t.method === "GET");
-    if (t.method !== "GET")
+    assert.equal(t.annotations.readOnlyHint, t.method === "GET" || t.operationId === "lookupCustomers");
+    if (!t.annotations.readOnlyHint)
       assert.ok(t.inputSchema.required.includes("idempotencyKey"));
     assert.ok(!t.inputSchema.properties.url);
     assert.ok(!t.inputSchema.properties.method);
@@ -87,7 +87,7 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
       res.end(
         JSON.stringify({
           environment: "pre-prod",
-          contractVersion: "1.2.0",
+          contractVersion: "1.3.0",
           purpose: "mcp",
           scopes: ["runtime:read", "inventory:write", "documents:download"],
           capabilities,
@@ -229,3 +229,5 @@ test("stdio CRUD carries conditional headers and refreshes revoked capabilities"
     http.close();
   }
 });
+
+test('private customer lookup is a typed read-only POST with no write key or uncertain-write label',async()=>{const lookup=tools.find(t=>t.operationId==='lookupCustomers');assert.equal(lookup.annotations.readOnlyHint,true);assert.equal(lookup.annotations.destructiveHint,false);assert.equal(lookup.inputSchema.properties.idempotencyKey,undefined);assert.equal(lookup.schema.safeParse({body:{mode:'email',search:'synthetic@example.test',limit:10}}).success,true);let request;const client=createApiClient({baseUrl:'https://aroharetreat.com/api/external/v1',token,fetcher:async(url,options)=>{request={url,options};return new Response(JSON.stringify({items:[],hasMore:false}),{status:200});}});await client.request(lookup,{body:{mode:'email',search:'synthetic@example.test'}});assert.equal(request.options.method,'POST');assert.equal(request.options.headers['Idempotency-Key'],undefined);assert.equal(request.url.includes('synthetic'),false);assert.equal(JSON.parse(request.options.body).search,'synthetic@example.test');const failed=createApiClient({baseUrl:'https://aroharetreat.com/api/external/v1',token,fetcher:async()=>{throw Error('synthetic');}});await assert.rejects(failed.request(lookup,{body:{mode:'name',search:'Synthetic'}}),e=>e.code==='API_UNAVAILABLE');});

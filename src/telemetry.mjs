@@ -31,7 +31,7 @@ export function createTelemetry({
   environment = "production",
   exporters,
   stderr = process.stderr,
-  version = "0.2.0",
+  version = "0.3.0",
 } = {}) {
   if (endpoint) {
     const u = new URL(endpoint);
