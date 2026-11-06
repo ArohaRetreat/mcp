@@ -1,14 +1,15 @@
 #!/usr/bin/env node
+import {legacyReadOperations} from './tools.mjs';
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { createApiClient, credential } from "./client.mjs";
 import { createServer } from "./server.mjs";
 import { createTelemetry, safeErrorCode } from "./telemetry.mjs";
 if (process.argv.includes("--help")) {
   process.stdout.write(
-    "Aroha MCP0.1.0 — read-only stdio server\nSet AROHA_API_URL to https://aroharetreat.com/api/external/v1 (or preprod).\nSet AROHA_API_TOKEN_FILE to a private scoped-token file (chmod600), or AROHA_API_TOKEN.\nOptional: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS.\nDocs: https://developer.aroharetreat.com/mcp/\n",
+    "Aroha MCP0.2.0 — scoped CRUD stdio server\nSet AROHA_API_URL to https://aroharetreat.com/api/external/v1 (or preprod).\nSet AROHA_API_TOKEN_FILE to a private scoped-token file (chmod600), or AROHA_API_TOKEN.\nOptional: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS.\nDocs: https://developer.aroharetreat.com/mcp/\n",
   );
 } else if (process.argv.includes("--version")) {
-  process.stdout.write("0.1.0\n");
+  process.stdout.write("0.2.0\n");
 } else {
   let telemetry, handle;
   try {
@@ -39,12 +40,12 @@ if (process.argv.includes("--help")) {
       operationId: "getRuntime",
     });
     if (
-      runtime.data.purpose !== "mcp-readonly" ||
+      !["mcp-readonly","mcp"].includes(runtime.data.purpose) ||
       !Array.isArray(runtime.data.scopes) ||
-      runtime.data.scopes.some((s) => !s.endsWith(":read"))
+      (runtime.data.purpose === "mcp-readonly" && runtime.data.scopes.some((s) => !s.endsWith(":read")))
     )
-      throw Object.assign(new Error("READ_ONLY_TOKEN_REQUIRED"), {
-        code: "READ_ONLY_TOKEN_REQUIRED",
+      throw Object.assign(new Error("MCP_TOKEN_REQUIRED"), {
+        code: "MCP_TOKEN_REQUIRED",
       });
     if (!Array.isArray(runtime.data.capabilities))
       throw new Error("INVALID_CAPABILITIES");
@@ -53,7 +54,7 @@ if (process.argv.includes("--help")) {
         createServer({
           client,
           telemetry,
-          capabilities: runtime.data.capabilities,
+          capabilities: runtime.data.purpose==="mcp-readonly"?runtime.data.capabilities.filter(id=>legacyReadOperations.includes(id)):runtime.data.capabilities,
         }),
       {
         onerror: () => {

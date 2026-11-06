@@ -266,7 +266,7 @@ test("CLI refuses a broader integration credential before exposing any tools", a
     await once(child, "exit");
     assert.equal(child.exitCode, 1);
     assert.equal(stdout, "");
-    assert.ok(stderr.includes("READ_ONLY_TOKEN_REQUIRED"));
+    assert.ok(stderr.includes("MCP_TOKEN_REQUIRED"));
     assert.ok(!stderr.includes(token));
   } finally {
     child.kill();

@@ -61,80 +61,149 @@ export function createApiClient({
     token.startsWith("aroha_v1_ppr_") !== base.includes("preprod")
   )
     throw new ApiError("WRONG_ENVIRONMENT");
-  return {
-    base,
-    async get(tool, args = {}) {
-      let path = tool.path;
-      const query = new URLSearchParams();
-      for (const [k, v] of Object.entries(args)) {
-        if (path.includes("{" + k + "}"))
-          path = path.replace("{" + k + "}", encodeURIComponent(v));
-        else if (Array.isArray(v)) {
-          for (const x of v) query.append(k, String(x));
-        } else if (v !== undefined) query.set(k, String(v));
+  async function request(tool, args = {}) {
+    let path = tool.path;
+    const method = tool.method || "GET";
+    if (!["GET", "POST", "PATCH", "DELETE"].includes(method))
+      throw new ApiError("INVALID_API_METHOD");
+    const query = new URLSearchParams();
+    const parameters =
+      tool.parameters ||
+      Object.keys(args).map((name) => ({
+        name,
+        in: path.includes("{" + name + "}") ? "path" : "query",
+      }));
+    for (const p of parameters) {
+      if (p.in === "header") continue;
+      const v = args[p.name];
+      if (v === undefined) continue;
+      if (p.in === "path") {
+        if (typeof v !== "string" || !/^[A-Za-z0-9:_-]{1,128}$/.test(v))
+          throw new ApiError("INVALID_API_PATH");
+        path = path.replace("{" + p.name + "}", encodeURIComponent(v));
+      } else if (p.in === "query") {
+        if (Array.isArray(v))
+          for (const x of v) query.append(p.name, String(x));
+        else query.set(p.name, String(v));
       }
-      if (
-        !path.startsWith("/") ||
-        path.includes("..") ||
-        path.includes("{") ||
-        !/^\/[a-z0-9_:/-]+$/.test(path)
-      )
-        throw new ApiError("INVALID_API_PATH");
-      const url = base + path + (query.size ? "?" + query : "");
-      const sc = trace.getSpan(context.active())?.spanContext();
-      const headers = {
-        Authorization: "Bearer " + token,
-        Accept: "application/json",
-        "X-Aroha-MCP-Operation": tool.operationId,
-      };
-      if (sc)
-        headers.traceparent = `00-${sc.traceId}-${sc.spanId}-${sc.traceFlags === 1 ? "01" : "00"}`;
-      let r;
-      try {
-        r = await fetcher(url, {
-          method: "GET",
-          headers,
-          redirect: "error",
-          signal: AbortSignal.timeout(10000),
-        });
-      } catch {
-        throw new ApiError("API_UNAVAILABLE");
+    }
+    if (
+      !path.startsWith("/") ||
+      path.includes("..") ||
+      path.includes("{") ||
+      !/^\/(?:[A-Za-z0-9_:/-]|%[A-F0-9]{2})+$/.test(path)
+    )
+      throw new ApiError("INVALID_API_PATH");
+    const headers = {
+      Authorization: "Bearer " + token,
+      Accept: tool.binary ? "application/pdf" : "application/json",
+      "X-Aroha-MCP-Operation": tool.operationId,
+    };
+    if (method !== "GET") {
+      if (!/^[A-Za-z0-9-]{8,100}$/.test(args.idempotencyKey || ""))
+        throw new ApiError("IDEMPOTENCY_KEY_REQUIRED");
+      headers["Idempotency-Key"] = args.idempotencyKey;
+      headers["Content-Type"] = "application/json";
+      if (args.ifMatch !== undefined) {
+        if (
+          typeof args.ifMatch !== "string" ||
+          !/^"[a-z_]+:[A-Za-z0-9:_-]{1,128}:[0-9]+"$/.test(args.ifMatch)
+        )
+          throw new ApiError("INVALID_ETAG");
+        headers["If-Match"] = args.ifMatch;
       }
-      if (Number(r.headers.get("content-length")) > 131072) {
-        await r.body?.cancel();
-        throw new ApiError("OUTPUT_TOO_LARGE", r.status);
-      }
-      const chunks = [];
-      let size = 0;
+    }
+    const sc = trace.getSpan(context.active())?.spanContext();
+    if (sc)
+      headers.traceparent = `00-${sc.traceId}-${sc.spanId}-${sc.traceFlags === 1 ? "01" : "00"}`;
+    let r;
+    try {
+      r = await fetcher(base + path + (query.size ? "?" + query : ""), {
+        method,
+        headers,
+        ...(method === "GET" ? {} : { body: JSON.stringify(args.body || {}) }),
+        redirect: "error",
+        signal: AbortSignal.timeout(25000),
+      });
+    } catch {
+      throw new ApiError(
+        method === "GET" ? "API_UNAVAILABLE" : "WRITE_OUTCOME_UNKNOWN",
+      );
+    }
+    const max = tool.binary ? 4 * 1024 * 1024 : 131072;
+    if (Number(r.headers.get("content-length")) > max) {
+      await r.body?.cancel();
+      throw new ApiError("OUTPUT_TOO_LARGE", r.status);
+    }
+    const chunks = [];
+    let size = 0;
+    try {
       if (r.body)
-        for await (const b of r.body) {
-          size += b.length;
-          if (size > 131072) throw new ApiError("OUTPUT_TOO_LARGE", r.status);
-          chunks.push(b);
+        for await (const chunk of r.body) {
+          size += chunk.length;
+          if (size > max) throw new ApiError("OUTPUT_TOO_LARGE", r.status);
+          chunks.push(chunk);
         }
-      let data;
-      try {
-        data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-      } catch {
-        throw new ApiError("INVALID_API_RESPONSE", r.status);
-      }
-      if (!r.ok) {
-        const c = data?.error?.code;
-        throw new ApiError(
-          typeof c === "string" && /^[A-Z_]{1,64}$/.test(c)
-            ? c
-            : "API_REQUEST_FAILED",
-          r.status,
-        );
-      }
-      if (!data || typeof data !== "object" || Array.isArray(data))
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      throw new ApiError(
+        method === "GET" ? "API_UNAVAILABLE" : "WRITE_OUTCOME_UNKNOWN",
+      );
+    }
+    const bytes = Buffer.concat(chunks);
+    const requestId = /^[a-f0-9-]{36}$/.test(
+      r.headers.get("x-request-id") || "",
+    )
+      ? r.headers.get("x-request-id")
+      : undefined;
+    const etag = /^"[a-z_]+:[A-Za-z0-9:_-]{1,128}:[0-9]+"$/.test(
+      r.headers.get("etag") || "",
+    )
+      ? r.headers.get("etag")
+      : undefined;
+    if (tool.binary && r.ok) {
+      if (
+        !r.headers.get("content-type")?.startsWith("application/pdf") ||
+        bytes.subarray(0, 4).toString() !== "%PDF"
+      )
         throw new ApiError("INVALID_API_RESPONSE", r.status);
       return {
-        data,
-        requestId: /^[a-f0-9-]{36}$/.test(r.headers.get("x-request-id") || "")
-          ? r.headers.get("x-request-id")
-          : undefined,
+        data: {
+          documentId: args.documentId,
+          contentType: "application/pdf",
+          size,
+        },
+        binary: bytes,
+        requestId,
+        etag,
       };
+    }
+    let data;
+    try {
+      data = JSON.parse(bytes.toString("utf8"));
+    } catch {
+      throw new ApiError("INVALID_API_RESPONSE", r.status);
+    }
+    if (!r.ok) {
+      const c = data?.error?.code;
+      throw new ApiError(
+        typeof c === "string" && /^[A-Z_]{1,64}$/.test(c)
+          ? c
+          : "API_REQUEST_FAILED",
+        r.status,
+      );
+    }
+    if (!data || typeof data !== "object" || Array.isArray(data))
+      throw new ApiError("INVALID_API_RESPONSE", r.status);
+    return { data, requestId, etag };
+  }
+  return {
+    base,
+    request,
+    get(tool, args = {}) {
+      if (tool.method && tool.method !== "GET")
+        throw new ApiError("READ_METHOD_REQUIRED");
+      return request(tool, args);
     },
   };
 }

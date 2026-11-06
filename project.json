@@ -10,7 +10,7 @@
   "decisions": {
     "product": {
       "status": "approved",
-      "value": "Separate read-only Aroha MCP npm package @theharithsa/aroha-mcp",
+      "value": "Separate scoped CRUD Aroha MCP npm package @theharithsa/aroha-mcp; preserve legacy read-only token ceiling",
       "approval": "User request6November2026"
     },
     "stack": {
@@ -25,7 +25,7 @@
     },
     "privacy": {
       "status": "approved",
-      "value": "No arguments/results/contact/secrets in telemetry; scoped read-only API credentials",
+      "value": "No arguments/results/contact/secrets in telemetry; explicit scoped API credentials and current role/ownership checks",
       "approval": "User request6November2026"
     },
     "observability": {
