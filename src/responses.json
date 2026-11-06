@@ -1,0 +1,504 @@
+{
+  "Runtime": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "environment": {
+        "enum": [
+          "production",
+          "pre-prod"
+        ]
+      },
+      "contractVersion": {
+        "type": "string"
+      },
+      "capabilities": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 50
+      },
+      "purpose": {
+        "type": "string",
+        "enum": [
+          "integration",
+          "mcp-readonly"
+        ]
+      },
+      "scopes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 24
+      }
+    },
+    "required": [
+      "environment",
+      "contractVersion",
+      "capabilities",
+      "purpose",
+      "scopes"
+    ]
+  },
+  "Availability": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "available": {
+        "type": "boolean"
+      },
+      "configVersion": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "availableUnitIds": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 5
+      },
+      "reasons": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 10
+      }
+    },
+    "required": [
+      "available",
+      "configVersion",
+      "availableUnitIds",
+      "reasons"
+    ]
+  },
+  "Calendar": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "settingsVersion": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "asOf": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "days": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "date": {
+              "type": "string",
+              "format": "date"
+            },
+            "available": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "date",
+            "available"
+          ]
+        },
+        "maxItems": 31
+      }
+    },
+    "required": [
+      "settingsVersion",
+      "asOf",
+      "days"
+    ]
+  },
+  "Reservation": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "reference": {
+        "type": "string"
+      },
+      "version": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "kind": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "arrival": {
+        "type": "string",
+        "format": "date"
+      },
+      "departure": {
+        "type": "string",
+        "format": "date"
+      },
+      "adults": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "childrenCount": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "unitIds": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 5
+      },
+      "totalPaise": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0
+      },
+      "currency": {
+        "const": "INR"
+      }
+    },
+    "required": [
+      "id",
+      "version",
+      "kind",
+      "status",
+      "arrival",
+      "departure",
+      "adults",
+      "childrenCount",
+      "unitIds",
+      "totalPaise",
+      "currency"
+    ]
+  },
+  "ReservationPage": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "kind": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "arrival": {
+              "type": "string",
+              "format": "date"
+            },
+            "departure": {
+              "type": "string",
+              "format": "date"
+            },
+            "adults": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "childrenCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unitIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 5
+            },
+            "totalPaise": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "currency": {
+              "const": "INR"
+            }
+          },
+          "required": [
+            "id",
+            "version",
+            "kind",
+            "status",
+            "arrival",
+            "departure",
+            "adults",
+            "childrenCount",
+            "unitIds",
+            "totalPaise",
+            "currency"
+          ]
+        },
+        "maxItems": 50
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 2048
+      }
+    },
+    "required": [
+      "items",
+      "nextCursor"
+    ]
+  },
+  "Unit": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "version": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "name": {
+        "type": "string"
+      },
+      "type": {
+        "type": "string"
+      },
+      "capacity": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "rate": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0
+      },
+      "active": {
+        "type": "boolean"
+      },
+      "ready": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "version",
+      "capacity",
+      "active"
+    ]
+  },
+  "UnitPage": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "capacity": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rate": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "ready": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "version",
+            "capacity",
+            "active"
+          ]
+        },
+        "maxItems": 50
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 2048
+      }
+    },
+    "required": [
+      "items",
+      "nextCursor"
+    ]
+  },
+  "PublishedContent": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "version": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "content": {
+        "type": "object"
+      }
+    },
+    "required": [
+      "id",
+      "version",
+      "content"
+    ]
+  },
+  "CommunicationsPage": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "channel": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "templateVersion": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "version",
+            "channel",
+            "status",
+            "createdAt"
+          ]
+        },
+        "maxItems": 50
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 2048
+      }
+    },
+    "required": [
+      "items",
+      "nextCursor"
+    ]
+  },
+  "Profile": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "phone": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string"
+      },
+      "version": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "required": [
+      "name",
+      "phone",
+      "email",
+      "version"
+    ]
+  },
+  "Contact": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "phone": {
+        "type": "string"
+      },
+      "verifiedEmail": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "phone",
+      "verifiedEmail"
+    ]
+  },
+  "DomainResult": {
+    "type": "object",
+    "description": "Existing shared booking-domain result. Additional fields remain owned by the legacy booking contract; normalized read DTOs are strict."
+  }
+}

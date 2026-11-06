@@ -37,7 +37,7 @@ class CatalogTests(unittest.TestCase):
         self.assertNotEqual(self.generate(root, *args).returncode, 0)
         self.assertEqual((root / 'skills/catalog.json').read_bytes(), updated)
         self.assertEqual((root / 'skills/service-synthetic-api/SKILL.md').read_bytes(), generated)
-        self.assertFalse((root / 'src').exists())
+        self.assertFalse((root / 'src/api').exists())
 
     def test_rejects_missing_skill_or_uncataloged_skill(self):
         root = self.fixture()
