@@ -1,3 +1,7 @@
+## 0.3.1 — OpenTelemetry maintenance
+
+- Update the OpenTelemetry SDK to 2.12.1 and OTLP packages to 0.223.2 within the supported API peer range.
+
 ## 0.2.0 — scoped CRUD
 
 - Generate106 fixed typed tools from canonical REST contract1.2.0; preserve nine original read names and read-only grant ceiling.
