@@ -70,7 +70,7 @@ Shared boundaries: [safety](safety.md), [evidence](evidence.md), [service owners
 - Each event carries stable source identity, occurrence/observation times, schema, authority, repository and applicable issue/PR/head SHA/run attempt/release/artifact/environment links.
 - Preserve many-to-many issue/PR mappings.
 
-- When dt-obs is installed, read its `references/sdlc.md`; the essentials here remain usable independently: trusted GitHub observer, signed-webhook validation, durable delivery/reconciliation, stable source event IDs, deduplication, allowlisted metadata, bounded metrics and source-to-tenant evidence.
+- Follow the installed dt-obs SDLC reference for the trusted GitHub observer, stable event IDs, delivery, reconciliation and source-to-tenant evidence.
 - Use a CI/SDLC-specific provider/service; link to application telemetry through the actual deployed commit/artifact/version and environment, not invented trace ancestry.
 - Development milestones need explicit trusted records because GitHub cannot observe every local action.
 
@@ -80,9 +80,11 @@ Shared boundaries: [safety](safety.md), [evidence](evidence.md), [service owners
 
 ## GitHub signals
 
-- Use references/github-release.md for actual workflow/job/check/test/release observations.
-- CI is automation-confirmed, not a domain commit.
-- Keep report-processing spans distinct from original test execution.
+- Use the installed dt-obs GitHub Actions reference for Thoth guidance. The Aroha website already uses its own trusted delivery observer.
+- Use a trusted reporting job that runs after applicable jobs settle. Read allowlisted runner artifacts or trusted GitHub APIs for actual workflow, check and leaf-case outcomes, including failures and skips.
+- Key events by repository, revision, run, originating attempt and check/case ID as applicable. Include actual status, occurrence time and available duration. Test report parsing against real passed, failed, skipped and nested cases. Exclude free text and command output from exports. Keep high-cardinality IDs out of metric dimensions.
+- Preserve the original execution attempt through reporting retries. Use stable event IDs, bounded backoff and sanitized receipts. Stop retrying persistent authorization or schema rejections. Keep report-processing spans distinct from original test execution.
+- Record deployment or publication outcome with actual version, commit, run, environment when applicable, and time. Check acceptance and partial rejection separately for each signal and query tenant evidence where available.
 
 ## Verification
 
