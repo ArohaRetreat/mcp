@@ -11,7 +11,7 @@ export function createServer({ client, telemetry, capabilities }) {
     return new Set(r.data.capabilities.filter((id) => allowed.has(id)));
   };
   const server = new Server(
-    { name: "aroha-mcp", version: "0.2.0" },
+    { name: "aroha-mcp", version: "0.3.0" },
     { capabilities: { tools: {} } },
   );
   server.setRequestHandler("tools/list", async () => {

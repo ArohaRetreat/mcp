@@ -64,6 +64,7 @@ export function createApiClient({
   async function request(tool, args = {}) {
     let path = tool.path;
     const method = tool.method || "GET";
+    const readOnly=method==='GET'||tool.annotations?.readOnlyHint===true;
     if (!["GET", "POST", "PATCH", "DELETE"].includes(method))
       throw new ApiError("INVALID_API_METHOD");
     const query = new URLSearchParams();
@@ -100,9 +101,10 @@ export function createApiClient({
       "X-Aroha-MCP-Operation": tool.operationId,
     };
     if (method !== "GET") {
-      if (!/^[A-Za-z0-9-]{8,100}$/.test(args.idempotencyKey || ""))
-        throw new ApiError("IDEMPOTENCY_KEY_REQUIRED");
-      headers["Idempotency-Key"] = args.idempotencyKey;
+      if(!readOnly){
+        if (!/^[A-Za-z0-9-]{8,100}$/.test(args.idempotencyKey || ""))throw new ApiError("IDEMPOTENCY_KEY_REQUIRED");
+        headers["Idempotency-Key"] = args.idempotencyKey;
+      }
       headers["Content-Type"] = "application/json";
       if (args.ifMatch !== undefined) {
         if (
@@ -127,7 +129,7 @@ export function createApiClient({
       });
     } catch {
       throw new ApiError(
-        method === "GET" ? "API_UNAVAILABLE" : "WRITE_OUTCOME_UNKNOWN",
+        readOnly ? "API_UNAVAILABLE" : "WRITE_OUTCOME_UNKNOWN",
       );
     }
     const max = tool.binary ? 4 * 1024 * 1024 : 131072;
@@ -147,7 +149,7 @@ export function createApiClient({
     } catch (e) {
       if (e instanceof ApiError) throw e;
       throw new ApiError(
-        method === "GET" ? "API_UNAVAILABLE" : "WRITE_OUTCOME_UNKNOWN",
+        readOnly ? "API_UNAVAILABLE" : "WRITE_OUTCOME_UNKNOWN",
       );
     }
     const bytes = Buffer.concat(chunks);

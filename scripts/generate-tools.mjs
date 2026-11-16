@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 const source = process.argv[2];
 if (!source) throw Error("CANONICAL_OPENAPI_PATH_REQUIRED");
 const api = JSON.parse(await readFile(source));
-if (api.openapi !== "3.1.0" || api.info.version !== "1.2.0")
+if (api.openapi !== "3.1.0" || api.info.version !== "1.3.0")
   throw Error("UNSUPPORTED_CONTRACT");
 const resolve = (v) => {
   if (Array.isArray(v)) return v.map(resolve);
@@ -62,7 +62,7 @@ for (const [path, methods] of Object.entries(api.paths))
           required: ["documentId", "contentType", "size"],
         }
       : resolve(response.content["application/json"].schema);
-    const read = method === "get";
+    const read = method === "get" || op["x-read-only"] === true;
     const opName = op.operationId
       .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
       .toLowerCase();

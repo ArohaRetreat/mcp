@@ -6,10 +6,10 @@ import { createServer } from "./server.mjs";
 import { createTelemetry, safeErrorCode } from "./telemetry.mjs";
 if (process.argv.includes("--help")) {
   process.stdout.write(
-    "Aroha MCP0.2.0 — scoped CRUD stdio server\nSet AROHA_API_URL to https://aroharetreat.com/api/external/v1 (or preprod).\nSet AROHA_API_TOKEN_FILE to a private scoped-token file (chmod600), or AROHA_API_TOKEN.\nOptional: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS.\nDocs: https://developer.aroharetreat.com/mcp/\n",
+    "Aroha MCP0.3.0 — scoped CRUD stdio server\nSet AROHA_API_URL to https://aroharetreat.com/api/external/v1 (or preprod).\nSet AROHA_API_TOKEN_FILE to a private scoped-token file (chmod600), or AROHA_API_TOKEN.\nOptional: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS.\nDocs: https://developer.aroharetreat.com/mcp/\n",
   );
 } else if (process.argv.includes("--version")) {
-  process.stdout.write("0.2.0\n");
+  process.stdout.write("0.3.0\n");
 } else {
   let telemetry, handle;
   try {
